@@ -1,0 +1,20 @@
+Crear entorno virtual:
+    > py -m venv venv
+
+Para activar el entorno virtual (desde la carpeta backend):
+    > venv\Scripts\Activate.ps1
+
+Para instalar dependencias:
+    > python -m pip install -r requirements.txt
+
+Para ejecutar migraciones:
+    > python -m flask db upgrade -d migrations
+
+Para poblar datos base:
+    > python -m flask seed-data
+
+Para crear un admin:
+    > python -m flask create-admin nombre-de-admin mail-de-admin contraseña-de-admin true/false-super-admin
+
+Para iniciar la app:
+    > python wsgi.py

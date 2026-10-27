@@ -1,0 +1,84 @@
+{% extends "admin/base.html" %}
+{% block title %}Editar Unidad — CivicFlow Admin{% endblock %}
+
+{% block content %}
+<div class="max-w-lg space-y-6">
+  <div class="flex items-center gap-3">
+    <a href="{{ url_for('admin.units') }}"
+       class="p-2 rounded-xl text-slate-500 hover:bg-slate-200 hover:text-slate-700 transition-colors">
+      <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+      </svg>
+    </a>
+    <div>
+      <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight">Editar unidad</h1>
+      <p class="text-slate-500 text-sm">{{ unit.emoji }} {{ unit.name }}</p>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+    <form method="POST" class="space-y-5">
+      {{ form.hidden_tag() }}
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">{{ form.name.label.text }}</label>
+        {{ form.name(class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent") }}
+        {% for err in form.name.errors %}
+        <p class="text-rose-600 text-xs mt-1">{{ err }}</p>
+        {% endfor %}
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">{{ form.description.label.text }}</label>
+        {{ form.description(class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent", rows=2) }}
+        {% for err in form.description.errors %}
+        <p class="text-rose-600 text-xs mt-1">{{ err }}</p>
+        {% endfor %}
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">{{ form.color.label.text }}</label>
+          <div class="flex gap-2 items-center">
+            <div class="w-8 h-8 rounded-lg border border-slate-200 flex-shrink-0" id="color-preview" style="background-color: {{ unit.color }};"></div>
+            {{ form.color(class="flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent", id="color-input") }}
+          </div>
+          {% for err in form.color.errors %}
+          <p class="text-rose-600 text-xs mt-1">{{ err }}</p>
+          {% endfor %}
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">{{ form.emoji.label.text }}</label>
+          {{ form.emoji(class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent") }}
+          {% for err in form.emoji.errors %}
+          <p class="text-rose-600 text-xs mt-1">{{ err }}</p>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="flex gap-3 pt-2">
+        <button type="submit"
+          class="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold transition-colors shadow-lg shadow-indigo-200">
+          Guardar cambios
+        </button>
+        <a href="{{ url_for('admin.units') }}"
+           class="flex-1 py-2.5 text-center rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold transition-colors">
+          Cancelar
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  const colorInput = document.getElementById('color-input');
+  const colorPreview = document.getElementById('color-preview');
+  if (colorInput && colorPreview) {
+    colorInput.addEventListener('input', () => {
+      colorPreview.style.backgroundColor = colorInput.value;
+    });
+  }
+</script>
+{% endblock %}

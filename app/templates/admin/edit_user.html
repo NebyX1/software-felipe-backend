@@ -1,0 +1,88 @@
+{% extends "admin/base.html" %}
+{% block title %}Editar Usuario — CivicFlow Admin{% endblock %}
+
+{% block content %}
+<div class="max-w-lg space-y-6">
+  <div class="flex items-center gap-3">
+    <a href="{{ url_for('admin.users') }}"
+       class="p-2 rounded-xl text-slate-500 hover:bg-slate-200 hover:text-slate-700 transition-colors">
+      <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+      </svg>
+    </a>
+    <div>
+      <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight">Editar usuario</h1>
+      <p class="text-slate-500 text-sm">{{ edit_user.email }}</p>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+    <form method="POST" class="space-y-5">
+      {{ form.hidden_tag() }}
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">{{ form.name.label.text }}</label>
+        {{ form.name(class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent") }}
+        {% for err in form.name.errors %}
+        <p class="text-rose-600 text-xs mt-1">{{ err }}</p>
+        {% endfor %}
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">{{ form.email.label.text }}</label>
+        {{ form.email(class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent") }}
+        {% for err in form.email.errors %}
+        <p class="text-rose-600 text-xs mt-1">{{ err }}</p>
+        {% endfor %}
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">{{ form.password.label.text }}</label>
+        {{ form.password(class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent", placeholder="Dejar en blanco para no cambiar", autocomplete="new-password") }}
+        {% for err in form.password.errors %}
+        <p class="text-rose-600 text-xs mt-1">{{ err }}</p>
+        {% endfor %}
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">{{ form.role.label.text }}</label>
+        {{ form.role(class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent") }}
+        {% for err in form.role.errors %}
+        <p class="text-rose-600 text-xs mt-1">{{ err }}</p>
+        {% endfor %}
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">{{ form.unit_id.label.text }}</label>
+        {{ form.unit_id(class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent") }}
+        {% for err in form.unit_id.errors %}
+        <p class="text-rose-600 text-xs mt-1">{{ err }}</p>
+        {% endfor %}
+      </div>
+
+      <div class="flex gap-3 pt-2">
+        <button type="submit"
+          class="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold transition-colors shadow-lg shadow-indigo-200">
+          Guardar cambios
+        </button>
+        <a href="{{ url_for('admin.users') }}"
+           class="flex-1 py-2.5 text-center rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold transition-colors">
+          Cancelar
+        </a>
+      </div>
+    </form>
+
+    {% if edit_user.id != current_user.id %}
+    <form method="POST" action="{{ url_for('admin.delete_user', user_id=edit_user.id) }}"
+          class="mt-4 pt-4 border-t border-slate-100"
+          onsubmit="return confirm('¿Eliminar permanentemente a «{{ edit_user.name }}»? Esta acción no se puede deshacer.')">
+      {{ form.hidden_tag() }}
+      <button type="submit"
+        class="w-full py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-sm font-bold transition-colors">
+        Eliminar usuario permanentemente
+      </button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

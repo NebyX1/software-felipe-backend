@@ -1,0 +1,31 @@
+name: Verify standalone backend
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Prepare isolated private configuration
+        run: python scripts/configure.py --frontend-url https://frontend.example.invalid
+      - name: Verify distributable sources
+        run: python scripts/verify_no_secrets.py
+      - name: Build and initialize services
+        run: docker compose up -d --build --wait --wait-timeout 300
+      - name: Prepare independent test database
+        run: python scripts/prepare_tests.py
+      - name: Backend tests
+        run: docker compose exec -T backend python -m pytest tests -q
+      - name: Verify migration and persistence after restart
+        run: |
+          docker compose restart backend
+          docker compose up -d --wait --wait-timeout 180
+          docker compose exec -T backend curl -fsS http://127.0.0.1:5000/api/health/ready
+      - name: Stop test services
+        if: always()
+        run: docker compose down

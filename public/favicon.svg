@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Background -->
+  <rect width="32" height="32" rx="7" fill="url(#bg)"/>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#6366f1"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Kanban column dividers (subtle) -->
+  <line x1="12" y1="5" x2="12" y2="27" stroke="white" stroke-width="0.5" stroke-opacity="0.2"/>
+  <line x1="21" y1="5" x2="21" y2="27" stroke="white" stroke-width="0.5" stroke-opacity="0.2"/>
+
+  <!-- Column 1 – 3 cards (To Do) -->
+  <rect x="4"  y="6"  width="6" height="3.5" rx="1" fill="white" fill-opacity="0.90"/>
+  <rect x="4"  y="11" width="6" height="3.5" rx="1" fill="white" fill-opacity="0.70"/>
+  <rect x="4"  y="16" width="6" height="5"   rx="1" fill="white" fill-opacity="0.45"/>
+
+  <!-- Column 2 – 2 cards (In Progress, accent color) -->
+  <rect x="13" y="6"  width="6" height="5"   rx="1" fill="#fbbf24" fill-opacity="0.95"/>
+  <rect x="13" y="13" width="6" height="3.5" rx="1" fill="white"   fill-opacity="0.70"/>
+
+  <!-- Column 3 – 2 cards (Done, green tint) -->
+  <rect x="22" y="6"  width="6" height="3.5" rx="1" fill="#4ade80" fill-opacity="0.90"/>
+  <rect x="22" y="11" width="6" height="5"   rx="1" fill="white"   fill-opacity="0.55"/>
+</svg>

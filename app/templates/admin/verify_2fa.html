@@ -1,0 +1,80 @@
+{% extends "admin/base.html" %}
+{% block title %}Verificación 2FA — CivicFlow Admin{% endblock %}
+
+{% block content %}
+<div class="relative w-full max-w-md">
+
+  <div class="absolute -top-16 -right-16 w-64 h-64 bg-indigo-200 rounded-full blur-3xl opacity-40 pointer-events-none"></div>
+
+  <div class="relative z-10">
+    <!-- Header -->
+    <div class="text-center mb-8">
+      <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-2xl shadow-emerald-200 mb-5">
+        <svg class="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+        </svg>
+      </div>
+      <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight">Verificación en dos pasos</h1>
+      <p class="text-slate-500 text-sm font-medium mt-2 leading-relaxed px-4">
+        Ingresa el código de 6 dígitos que enviamos a tu correo electrónico.
+      </p>
+    </div>
+
+    <!-- Card -->
+    <div class="bg-white/90 backdrop-blur-xl border border-slate-200/80 rounded-3xl shadow-2xl shadow-slate-200/60 p-8">
+      <form method="POST" action="{{ url_for('admin.verify_2fa') }}" class="space-y-6">
+        {{ form.hidden_tag() }}
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-2 text-center">
+            {{ form.code.label.text }}
+          </label>
+          {{ form.code(
+            class="block w-full text-center tracking-[0.5em] text-3xl font-bold py-4 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all",
+            placeholder="000000",
+            maxlength="6",
+            autofocus=True,
+            inputmode="numeric",
+            autocomplete="one-time-code"
+          ) }}
+          {% for err in form.code.errors %}
+          <p class="text-rose-600 text-xs mt-1 text-center">{{ err }}</p>
+          {% endfor %}
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="space-y-1.5">
+          {% for category, message in messages %}
+          <div class="flex items-center gap-2 px-4 py-3 rounded-xl bg-rose-50 border border-rose-200">
+            <svg class="w-4 h-4 text-rose-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clip-rule="evenodd"/>
+            </svg>
+            <p class="text-rose-700 text-sm font-medium">{{ message }}</p>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <button type="submit"
+          class="w-full py-3.5 px-4 rounded-xl font-bold text-white text-sm
+                 bg-gradient-to-r from-emerald-600 to-teal-600
+                 hover:from-emerald-700 hover:to-teal-700
+                 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2
+                 shadow-lg shadow-emerald-200 transition-all duration-200 transform hover:-translate-y-0.5 active:scale-95">
+          Verificar identidad
+        </button>
+
+        <div class="text-center pt-1">
+          <a href="{{ url_for('admin.login') }}"
+             class="text-slate-400 hover:text-indigo-600 text-xs font-medium transition-colors">
+            ← Volver al inicio de sesión
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

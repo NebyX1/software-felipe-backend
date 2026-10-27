@@ -1,0 +1,52 @@
+# Private configuration and credentials (only templates are distributable).
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+credentials*.json
+
+# Previous projects and privately supplied source material.
+/sample/
+/documents/
+/private-data/
+/backups/
+/tmp/
+
+# Local dependencies, generated output and application data.
+venv/
+.venv/
+node_modules/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+dist/
+*.tsbuildinfo
+/vite.config.js
+/vite.config.d.ts
+instance/
+uploads/
+logs/
+test-results/
+playwright-report/
+*.log
+*.sql
+*.sql.gz
+*.db
+*.sqlite*
+*.bak
+*.tar.gz
+.coverage
+htmlcov/
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Local inspection utilities for private original material.
+/scripts/inspect_sources.py
+/scripts/verify_references.py

@@ -1,0 +1,119 @@
+{% extends "admin/base.html" %}
+{% block title %}Iniciar Sesión — CivicFlow Admin{% endblock %}
+
+{% block content %}
+<div class="relative w-full max-w-md">
+
+  <!-- Background blobs -->
+  <div class="absolute -top-24 -left-24 w-72 h-72 bg-indigo-200 rounded-full blur-3xl opacity-40 pointer-events-none"></div>
+  <div class="absolute -bottom-16 -right-16 w-64 h-64 bg-purple-200 rounded-full blur-3xl opacity-40 pointer-events-none"></div>
+
+  <div class="relative z-10">
+    <!-- Header -->
+    <div class="text-center mb-8">
+      <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-2xl shadow-indigo-300 mb-5">
+        <svg class="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        </svg>
+      </div>
+      <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">CivicFlow</h1>
+      <p class="text-slate-500 text-sm font-medium mt-1">Plataforma de Gestión Pública · Panel Admin</p>
+    </div>
+
+    <!-- Card -->
+    <div class="bg-white/90 backdrop-blur-xl border border-slate-200/80 rounded-3xl shadow-2xl shadow-slate-200/60 p-8">
+      <form method="POST" action="{{ url_for('admin.login') }}" class="space-y-5">
+        {{ form.hidden_tag() }}
+
+        <!-- Email -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">
+            {{ form.email.label.text }}
+          </label>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+              <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
+              </svg>
+            </div>
+            {{ form.email(class="block w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all", placeholder="admin@civicflow.gob") }}
+          </div>
+          {% for err in form.email.errors %}
+          <p class="text-rose-600 text-xs mt-1">{{ err }}</p>
+          {% endfor %}
+        </div>
+
+        <!-- Password -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">
+            {{ form.password.label.text }}
+          </label>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+              <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+            </div>
+            {{ form.password(class="block w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all", placeholder="••••••••") }}
+          </div>
+          {% for err in form.password.errors %}
+          <p class="text-rose-600 text-xs mt-1">{{ err }}</p>
+          {% endfor %}
+        </div>
+
+        <!-- Captcha -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">
+            Verificación: {{ captcha_question }}
+          </label>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+              <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+            </div>
+            {{ form.captcha(class="block w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all", placeholder="Respuesta") }}
+          </div>
+          {% for err in form.captcha.errors %}
+          <p class="text-rose-600 text-xs mt-1">{{ err }}</p>
+          {% endfor %}
+        </div>
+
+        <!-- Flash messages inside form -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="space-y-1.5">
+          {% for category, message in messages %}
+          <div class="flex items-center gap-2 px-4 py-3 rounded-xl bg-rose-50 border border-rose-200">
+            <svg class="w-4 h-4 text-rose-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clip-rule="evenodd"/>
+            </svg>
+            <p class="text-rose-700 text-sm font-medium">{{ message }}</p>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <!-- Submit -->
+        <button type="submit"
+          class="w-full py-3.5 px-4 rounded-xl font-bold text-white text-sm
+                 bg-gradient-to-r from-indigo-600 to-purple-600
+                 hover:from-indigo-700 hover:to-purple-700
+                 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2
+                 shadow-lg shadow-indigo-200 transition-all duration-200 transform hover:-translate-y-0.5 active:scale-95">
+          Iniciar Sesión
+        </button>
+      </form>
+    </div>
+
+    <p class="text-center text-xs text-slate-400 mt-6 font-medium tracking-widest uppercase">
+      &copy; {{ now.year if now is defined else '2026' }} CivicFlow · IDL
+    </p>
+  </div>
+</div>
+{% endblock %}

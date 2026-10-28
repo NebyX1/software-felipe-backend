@@ -87,4 +87,3 @@ volumes:
   obras-db:
   obras-redis:
   obras-objects:
-

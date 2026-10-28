@@ -1,0 +1,90 @@
+# Isolated development/CI services only. Production uses compose.coolify.yaml.
+services:
+  db:
+    image: mariadb:11.4.5
+    environment:
+      MARIADB_DATABASE: obras_demo
+      MARIADB_USER: obras
+      MARIADB_PASSWORD: ${DB_PASSWORD:-${SERVICE_PASSWORD_DBPASSWORD}}
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-${SERVICE_PASSWORD_DBROOT}}
+    volumes: ["obras-db:/var/lib/mysql"]
+    restart: unless-stopped
+    healthcheck:
+      test: [CMD, healthcheck.sh, --connect, --innodb_initialized]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+  redis:
+    image: redis:7.4.2-alpine
+    command: [redis-server, --appendonly, "yes"]
+    volumes: ["obras-redis:/data"]
+    restart: unless-stopped
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  minio:
+    build: ./services/minio
+    command: server /data --console-address :9001
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-${SERVICE_USER_MINIO}}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-${SERVICE_PASSWORD_64_MINIO}}
+    volumes: ["obras-objects:/data"]
+    restart: unless-stopped
+    healthcheck:
+      test: [CMD, curl, -f, http://localhost:9000/minio/health/live]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  backend:
+    build: .
+    environment:
+      FLASK_APP: app
+      TZ: America/Montevideo
+      DATABASE_URL: ${DATABASE_URL:?Configure DATABASE_URL con mariadb+mariadbconnector}
+      FLASK_CONFIG: production
+      SECRET_KEY: ${SECRET_KEY:-${SERVICE_PASSWORD_64_SESSION}}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-${SERVICE_PASSWORD_64_JWT}}
+      REDIS_URL: redis://redis:6379/0
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-${SERVICE_USER_MINIO}}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-${SERVICE_PASSWORD_64_MINIO}}
+      MINIO_BUCKET_NAME: lavalleja-obras
+      MINIO_SECURE: "false"
+      DOCUMENT_STORAGE: minio
+      DEMO_AUTH_ENABLED: "true"
+      DEMO_ENVIRONMENT: "true"
+      DEMO_ACCESS_REQUIRED: "true"
+      DEMO_ACCESS_CODE: ${DEMO_ACCESS_CODE:-${SERVICE_PASSWORD_DEMOACCESS}}
+      INIT_BUCKET_ON_START: "true"
+      BOOTSTRAP_ON_START: "true"
+      DEMO_SEED_ON_START: "true"
+      COOKIE_SECURE: "true"
+      TRUST_PROXY: "true"
+      FRONTEND_URL: ${FRONTEND_URL:?Configure la URL HTTPS del frontend}
+      CORS_ORIGINS: ${FRONTEND_URL:?Configure la URL HTTPS del frontend}
+      AI_ENABLED: ${AI_ENABLED:-false}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-https://ollama.com/v1}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-deepseek-v4.1-flash:cloud}
+      OLLAMA_API_KEY: ${OLLAMA_API_KEY:-}
+      AI_OUTPUT_MODE: ${AI_OUTPUT_MODE:-tool}
+      GUNICORN_WORKERS: ${GUNICORN_WORKERS:-2}
+      GUNICORN_THREADS: ${GUNICORN_THREADS:-4}
+    expose: ["5000"]
+    restart: unless-stopped
+    depends_on:
+      db: {condition: service_healthy}
+      minio: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, curl, -f, http://localhost:5000/api/health/ready]
+      start_period: 120s
+      interval: 10s
+      timeout: 5s
+      retries: 12
+volumes:
+  obras-db:
+  obras-redis:
+  obras-objects:
+

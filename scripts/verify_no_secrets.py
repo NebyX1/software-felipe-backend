@@ -5,6 +5,7 @@ from pathlib import Path
 import re
 import subprocess
 import sys
+from urllib.parse import unquote, urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -34,6 +35,14 @@ def main():
     public_demo_defaults = {'obras-' + suffix for suffix in ('local-demo', 'root-demo', 'minio-demo-private', 'demo')}
     for env in private_paths:
         for key, value in env_values(env).items():
+            if key in ('DATABASE_URL', 'SQLALCHEMY_DATABASE_URI') and value:
+                private_values.add(value.encode())
+                try:
+                    password = urlsplit(value).password
+                    if password and len(password) >= 8:
+                        private_values.update((password.encode(), unquote(password).encode()))
+                except ValueError:
+                    pass
             if key in ('DB_PASSWORD', 'DB_ROOT_PASSWORD', 'MINIO_SECRET_KEY', 'MINIO_ACCESS_KEY') and value in public_demo_defaults:
                 continue
             if (any(term in key for term in ('KEY', 'SECRET', 'PASSWORD', 'TOKEN')) or key == 'DEMO_ACCESS_CODE') and len(value) >= 8:

@@ -16,7 +16,6 @@ gunicorn==24.1.1
 mariadb==1.1.14
 python-dotenv==1.2.1
 redis==7.2.0
-PyMySQL==1.1.2
 minio==7.2.20
 pydantic==2.13.5
 pydantic-ai-slim==2.40.0

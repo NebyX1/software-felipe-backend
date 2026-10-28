@@ -1,73 +1,37 @@
-# Coolify generates SERVICE_* values once and preserves them between deployments.
-# Backend independiente: asignar dominio HTTPS sólo al servicio backend, puerto 5000.
+# Institutional deployment: external MariaDB, MinIO and optional Redis.
 services:
-  db:
-    image: mariadb:11.4.5
-    environment:
-      MARIADB_DATABASE: obras_demo
-      MARIADB_USER: obras
-      MARIADB_PASSWORD: ${DB_PASSWORD:-${SERVICE_PASSWORD_DBPASSWORD}}
-      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-${SERVICE_PASSWORD_DBROOT}}
-    volumes: ["obras-db:/var/lib/mysql"]
-    restart: unless-stopped
-    healthcheck:
-      test: [CMD, healthcheck.sh, --connect, --innodb_initialized]
-      interval: 5s
-      timeout: 5s
-      retries: 30
-  redis:
-    image: redis:7.4.2-alpine
-    command: [redis-server, --appendonly, "yes"]
-    volumes: ["obras-redis:/data"]
-    restart: unless-stopped
-    healthcheck:
-      test: [CMD, redis-cli, ping]
-      interval: 5s
-      timeout: 3s
-      retries: 20
-  minio:
-    build: ./services/minio
-    command: server /data --console-address :9001
-    environment:
-      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-${SERVICE_USER_MINIO}}
-      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-${SERVICE_PASSWORD_64_MINIO}}
-    volumes: ["obras-objects:/data"]
-    restart: unless-stopped
-    healthcheck:
-      test: [CMD, curl, -f, http://localhost:9000/minio/health/live]
-      interval: 5s
-      timeout: 3s
-      retries: 20
   backend:
     build: .
     environment:
       SERVICE_URL_BACKEND: /
       FLASK_APP: app
+      FLASK_CONFIG: production
       TZ: America/Montevideo
-      DATABASE_HOST: db
-      DATABASE_PORT: "3306"
-      DATABASE_USER: obras
-      DATABASE_PASSWORD: ${DB_PASSWORD:-${SERVICE_PASSWORD_DBPASSWORD}}
-      DATABASE_NAME: obras_demo
-      SECRET_KEY: ${SECRET_KEY:-${SERVICE_PASSWORD_64_SESSION}}
-      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-${SERVICE_PASSWORD_64_JWT}}
-      REDIS_URL: redis://redis:6379/0
-      MINIO_ENDPOINT: minio:9000
-      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-${SERVICE_USER_MINIO}}
-      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-${SERVICE_PASSWORD_64_MINIO}}
-      MINIO_BUCKET_NAME: lavalleja-obras
-      MINIO_SECURE: "false"
+      DATABASE_URL: ${DATABASE_URL:?Configure DATABASE_URL con mariadb+mariadbconnector}
+      SECRET_KEY: ${SECRET_KEY:?Configure SECRET_KEY}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-${SECRET_KEY}}
+      DB_POOL_RECYCLE: ${DB_POOL_RECYCLE:-1800}
+      DB_POOL_TIMEOUT: ${DB_POOL_TIMEOUT:-30}
+      DB_POOL_SIZE: ${DB_POOL_SIZE:-10}
+      DB_MAX_OVERFLOW: ${DB_MAX_OVERFLOW:-20}
+      REDIS_URL: ${REDIS_URL:-memory://}
       DOCUMENT_STORAGE: minio
-      DEMO_AUTH_ENABLED: "true"
-      DEMO_ENVIRONMENT: "true"
-      DEMO_ACCESS_REQUIRED: "true"
-      DEMO_ACCESS_CODE: ${DEMO_ACCESS_CODE:-${SERVICE_PASSWORD_DEMOACCESS}}
-      BOOTSTRAP_ON_START: "true"
-      DEMO_SEED_ON_START: "true"
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT:?Configure el servidor MinIO}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:?Configure MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:?Configure MINIO_SECRET_KEY}
+      MINIO_BUCKET_NAME: ${MINIO_BUCKET_NAME:-software-felipe}
+      MINIO_SECURE: ${MINIO_SECURE:-true}
+      FRONTEND_URL: ${FRONTEND_URL:?Configure el origen HTTPS del frontend}
+      CORS_ORIGINS: ${CORS_ORIGINS:-${FRONTEND_URL}}
       COOKIE_SECURE: "true"
       TRUST_PROXY: "true"
-      FRONTEND_URL: ${FRONTEND_URL:?Configure la URL HTTPS del frontend}
-      CORS_ORIGINS: ${FRONTEND_URL:?Configure la URL HTTPS del frontend}
+      BOOTSTRAP_ON_START: "true"
+      INIT_BUCKET_ON_START: ${INIT_BUCKET_ON_START:-false}
+      DEMO_AUTH_ENABLED: ${DEMO_AUTH_ENABLED:-false}
+      DEMO_ENVIRONMENT: ${DEMO_ENVIRONMENT:-false}
+      DEMO_ACCESS_REQUIRED: ${DEMO_ACCESS_REQUIRED:-true}
+      DEMO_ACCESS_CODE: ${DEMO_ACCESS_CODE:-}
+      DEMO_SEED_ON_START: ${DEMO_SEED_ON_START:-false}
       AI_ENABLED: ${AI_ENABLED:-false}
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-https://ollama.com/v1}
       OLLAMA_MODEL: ${OLLAMA_MODEL:-deepseek-v4.1-flash:cloud}
@@ -77,17 +41,9 @@ services:
       GUNICORN_THREADS: ${GUNICORN_THREADS:-4}
     expose: ["5000"]
     restart: unless-stopped
-    depends_on:
-      db: {condition: service_healthy}
-      minio: {condition: service_healthy}
-      redis: {condition: service_healthy}
     healthcheck:
-      test: [CMD, curl, -f, http://localhost:5000/api/health/ready]
+      test: [CMD, curl, -f, http://localhost:5000/health]
       start_period: 120s
       interval: 10s
       timeout: 5s
       retries: 12
-volumes:
-  obras-db:
-  obras-redis:
-  obras-objects:

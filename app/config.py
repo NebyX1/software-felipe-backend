@@ -2,24 +2,33 @@ import os
 from datetime import timedelta
 from pathlib import Path
 from dotenv import load_dotenv
-from sqlalchemy.engine import URL
+from sqlalchemy.engine import make_url
 
 _BASE_DIR = Path(__file__).resolve().parent.parent
 _DOTENV_PATH = _BASE_DIR / '.env'
 
-# Load backend/.env when present without overriding injected env vars.
+# Same environment contract as buzon-ciudadano-backend.
 load_dotenv(_DOTENV_PATH, override=False)
 
 
 def database_uri(environment=None):
+    """Use the configured URL verbatim, as in the institutional reference."""
     values = os.environ if environment is None else environment
-    # Compose passes credentials separately so symbols never corrupt a URL.
-    if values.get('DATABASE_HOST'):
-        return URL.create('mysql+pymysql', username=values.get('DATABASE_USER', 'obras'),
-            password=values.get('DATABASE_PASSWORD', ''), host=values['DATABASE_HOST'],
-            port=int(values.get('DATABASE_PORT', '3306')), database=values.get('DATABASE_NAME', 'obras_demo'),
-            query={'charset': 'utf8mb4'}).render_as_string(hide_password=False)
-    return values.get('DATABASE_URL') or values.get('DATABASE_URI') or 'sqlite:///gvl.db'
+    return values.get('DATABASE_URL') or values.get('SQLALCHEMY_DATABASE_URI')
+
+
+def validate_database_uri(value):
+    """Require MariaDB Connector/Python without exposing URL credentials."""
+    message = 'Configure DATABASE_URL con el formato mariadb+mariadbconnector://usuario:clave@servidor:3306/base.'
+    try:
+        uri = make_url(value)
+        if uri.drivername != 'mariadb+mariadbconnector' or not uri.host or not uri.database or not uri.username:
+            raise ValueError(message)
+        if uri.port is not None and not 1 <= uri.port <= 65535:
+            raise ValueError(message)
+    except Exception:
+        raise ValueError(message) from None
+    return value
 
 # ─────────────────────────────────────────────────────────────────────────────
 # CivicFlow – Plataforma de Gestión Pública · IDL
@@ -76,12 +85,16 @@ def _parse_cors_origins(
 class Config:
     # Authorization reads occur before resource locks. READ COMMITTED ensures
     # a waiting transaction sees the winner's newly committed certificate.
-    SQLALCHEMY_ENGINE_OPTIONS = {'pool_pre_ping':True,'pool_recycle':300,'isolation_level':'READ COMMITTED'}
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'pool_pre_ping': True,
+        'pool_recycle': int(os.getenv('DB_POOL_RECYCLE', '1800')),
+        'pool_timeout': int(os.getenv('DB_POOL_TIMEOUT', '30')),
+        'pool_size': int(os.getenv('DB_POOL_SIZE', '10')),
+        'max_overflow': int(os.getenv('DB_MAX_OVERFLOW', '20')),
+        'isolation_level': 'READ COMMITTED',
+    }
     ENV_NAME = (os.environ.get('FLASK_ENV') or 'production').strip().lower()
-    SECRET_KEY = (
-        os.environ.get('SECRET_KEY')
-        or 'change-me-in-production-please'
-    )
+    SECRET_KEY = os.environ.get('SECRET_KEY')
     SQLALCHEMY_DATABASE_URI = database_uri()
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
@@ -191,6 +204,33 @@ class Config:
         os.environ.get('WORKS_MAX_FILE_SIZE')
         or 2 * 1024 * 1024
     )
+
+
+class DevelopmentConfig(Config):
+    DEBUG = True
+    SESSION_COOKIE_SECURE = False
+
+
+class ProductionConfig(Config):
+    DEBUG = False
+    SESSION_COOKIE_SECURE = True
+    REMEMBER_COOKIE_SECURE = True
+    PREFERRED_URL_SCHEME = 'https'
+
+
+class TestingConfig(Config):
+    TESTING = True
+    WTF_CSRF_ENABLED = False
+    RATELIMIT_ENABLED = False
+    SESSION_COOKIE_SECURE = False
+
+
+config = {
+    'development': DevelopmentConfig,
+    'production': ProductionConfig,
+    'testing': TestingConfig,
+    'default': DevelopmentConfig,
+}
 
 
 

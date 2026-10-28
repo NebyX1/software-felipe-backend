@@ -2,19 +2,27 @@
 import os
 from pathlib import Path
 from uuid import uuid4
-from flask import Flask, jsonify, request, g
+from flask import Flask, jsonify, request, g, current_app
 from flask_cors import CORS
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError,OperationalError
 from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.exceptions import HTTPException
-from .config import Config
+from .config import config, validate_database_uri
 from .extensions import db, migrate, mail, jwt, limiter, login_manager, csrf
 
 
-def create_app(test_config=None):
+def create_app(config_name=None, test_config=None):
+    # Preserve test overrides while exposing the institutional profile-based factory.
+    if isinstance(config_name, dict):
+        test_config = config_name
+        config_name = None
+    if config_name is None:
+        config_name = 'testing' if test_config and test_config.get('TESTING') else os.getenv('FLASK_CONFIG', 'default')
+    if config_name not in config:
+        raise ValueError('FLASK_CONFIG debe ser development, production o testing.')
     app = Flask(__name__, static_folder='../public', static_url_path='/static')
-    app.config.from_object(Config)
+    app.config.from_object(config[config_name])
     app.config.update(
         DEMO_AUTH_ENABLED=os.getenv('DEMO_AUTH_ENABLED', 'false').lower() == 'true',
         DEMO_ENVIRONMENT=os.getenv('DEMO_ENVIRONMENT', 'false').lower() == 'true',
@@ -26,17 +34,17 @@ def create_app(test_config=None):
         MINIO_BUCKET_NAME=os.getenv('MINIO_BUCKET_NAME', 'lavalleja-obras'),
         MINIO_SECURE=os.getenv('MINIO_SECURE', 'false').lower() == 'true',
         MAX_CONTENT_LENGTH=21 * 1024 * 1024,
-        SESSION_COOKIE_SECURE=os.getenv('COOKIE_SECURE', 'false').lower() == 'true',
+        SESSION_COOKIE_SECURE=os.getenv('COOKIE_SECURE', str(app.config['SESSION_COOKIE_SECURE'])).lower() == 'true',
         MAINTENANCE_MODE=os.getenv('MAINTENANCE_MODE', 'false').lower() == 'true',
     )
     if test_config:
         app.config.update(test_config)
     if not app.testing and os.getenv('DEMO_ACCESS_REQUIRED', 'false').lower() == 'true' and len(app.config['DEMO_ACCESS_CODE']) < 8:
         raise RuntimeError('Configure un código privado de demo de al menos 8 caracteres.')
-    if not app.testing and app.config['SECRET_KEY'] == 'change-me-in-production-please':
-        raise RuntimeError('Configure SECRET_KEY in backend/.env before starting the application.')
-    if not app.testing and not app.config['SQLALCHEMY_DATABASE_URI'].startswith(('mysql','mariadb')):
-        raise RuntimeError('DATABASE_URL must point to MariaDB for this deployment.')
+    if not app.testing and not app.config['SECRET_KEY']:
+        raise RuntimeError('Configure SECRET_KEY en el entorno de la aplicación.')
+    if not app.testing:
+        validate_database_uri(app.config['SQLALCHEMY_DATABASE_URI'])
     if not app.testing and app.config['DOCUMENT_STORAGE']!='minio':
         raise RuntimeError('Deployment requires private MinIO/S3 document storage.')
     if os.getenv('TRUST_PROXY', 'false').lower() == 'true':
@@ -52,7 +60,7 @@ def create_app(test_config=None):
     @login_manager.user_loader
     def load_user(user_id):
         user = db.session.get(models.User, int(user_id))
-        return user if user and user.is_active and (not user.demo or app.config['DEMO_AUTH_ENABLED']) else None
+        return user if user and user.is_active and (not user.demo or current_app.config['DEMO_AUTH_ENABLED']) else None
 
     @jwt.token_in_blocklist_loader
     def revoked(_header, payload):
@@ -116,7 +124,10 @@ def create_app(test_config=None):
     @app.errorhandler(OperationalError)
     def database_error(error):
         db.session.rollback()
-        number=error.orig.args[0] if getattr(error,'orig',None) and error.orig.args else None
+        original = getattr(error, 'orig', None)
+        number = getattr(original, 'errno', None)
+        if number is None and getattr(original, 'args', ()) and isinstance(original.args[0], int):
+            number = original.args[0]
         if number in (1205,1213):return jsonify(code='concurrent_operation',message='Otra operación está modificando el recurso. Recargá y reintentá.'),409
         app.logger.error('Database unavailable id=%s',g.get('request_id'))
         return jsonify(code='database_unavailable',message='Base de datos no disponible.'),503

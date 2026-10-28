@@ -6,6 +6,8 @@ jobs:
   verify:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    env:
+      COMPOSE_PROJECT_NAME: felipe-mariadb-ci
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -16,16 +18,18 @@ jobs:
       - name: Verify distributable sources
         run: python scripts/verify_no_secrets.py
       - name: Build and initialize services
-        run: docker compose up -d --build --wait --wait-timeout 300
+        run: docker compose --env-file .env.test -f compose.test.yaml up -d --build --wait --wait-timeout 300
       - name: Prepare independent test database
         run: python scripts/prepare_tests.py
       - name: Backend tests
-        run: docker compose exec -T backend python -m pytest tests -q
+        run: docker compose --env-file .env.test -f compose.test.yaml exec -T backend python -m pytest tests -q
+      - name: Verify native MariaDB driver
+        run: docker compose --env-file .env.test -f compose.test.yaml exec -T backend python -c "from app import create_app; from app.extensions import db; a=create_app(); c=a.app_context(); c.push(); assert db.engine.dialect.driver == 'mariadbconnector'; assert db.engine.dialect.dbapi.__name__ == 'mariadb'"
       - name: Verify migration and persistence after restart
         run: |
-          docker compose restart backend
-          docker compose up -d --wait --wait-timeout 180
-          docker compose exec -T backend curl -fsS http://127.0.0.1:5000/api/health/ready
+          docker compose --env-file .env.test -f compose.test.yaml restart backend
+          docker compose --env-file .env.test -f compose.test.yaml up -d --wait --wait-timeout 180
+          docker compose --env-file .env.test -f compose.test.yaml exec -T backend curl -fsS http://127.0.0.1:5000/api/health/ready
       - name: Stop test services
         if: always()
-        run: docker compose down
+        run: docker compose --env-file .env.test -f compose.test.yaml down
